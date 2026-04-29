@@ -8,6 +8,7 @@ anyhow = "1.0.102"
 axum = "0.8.9"
 dashmap = "6.1.0"
 futures = "0.3.32"
+gateway-api = "0.21.0"
 k8s-openapi = { version = "0.27.0", features = ["latest", "schemars"] }
 kube = { version = "3.1.0", features = ["runtime"] }
 schemars = "1.2.1"

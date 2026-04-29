@@ -1,3 +1,5 @@
+use anyhow::Ok;
+use gateway_api::httproutes::HTTPRoute;
 use k8s_openapi::api::{apps::v1::Deployment, core::v1::Service};
 use kube::{Api, Client};
 use serde_json::json;
@@ -8,7 +10,7 @@ pub async fn create_deployment(
     port: u16,
     image: &str,
     namespace: &str,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<()> {
     let deployment: Deployment = serde_json::from_value(json!({
         "apiVersion": "apps/v1",
         "kind": "Deployment",
@@ -72,6 +74,54 @@ pub async fn create_deployment(
         )
         .await?;
 
-    // TODO: Placeholder until we get real Gateway API
-    Ok(format!("http://{}.{}.iti.local", app_name, namespace))
+    Ok(())
+}
+
+pub async fn create_http_route(
+    client: &Client,
+    app_name: &str,
+    namespace: &str,
+) -> anyhow::Result<String> {
+    let deploy_url = format!("{app_name}.app.iti");
+
+    let http_route: HTTPRoute = serde_json::from_value(json!({
+        "apiVersion": "gateway.networking.k8s.io/v1",
+        "kind": "HTTPRoute",
+        "metadata": {
+            "name": app_name,
+            "namespace": namespace
+        },
+        "spec": {
+            "parentRefs": [
+                {
+                    "name": "apps-gateway",
+                    "namespace": "default"
+                }
+            ],
+            "hostnames": [deploy_url],
+            "rules": [
+                {
+                    "matches": [
+                        {"path": {"type": "PathPrefix", "value": "/"}}
+                    ],
+                    "backendRefs": [
+                        // NOTE: Port must be 80 to align with svc port
+                        {"name": app_name, "port": 80}
+                    ]
+                }
+            ]
+        }
+    }))?;
+
+    let http_routes: Api<HTTPRoute> = Api::namespaced(client.clone(), namespace);
+
+    http_routes
+        .patch(
+            app_name,
+            &kube::api::PatchParams::apply("pipeline-service"),
+            &kube::api::Patch::Apply(http_route),
+        )
+        .await?;
+
+    Ok(format!("http://{deploy_url}"))
 }

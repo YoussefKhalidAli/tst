@@ -1,4 +1,4 @@
-use crate::pipeline::deploy::create_deployment;
+use crate::pipeline::deploy::{create_deployment, create_http_route};
 use crate::pipeline::watch::wait_for_job;
 use crate::router::{AppState, BuildStatus, DeployRequest, StatusStore};
 use crate::{APPS_NAMESPACE, REGISTRY_URL};
@@ -58,26 +58,48 @@ pub async fn watch_and_deploy(
     let image = format!("{REGISTRY_URL}/{}:{}", req.app_name, req.git_ref);
     info!(%image, namespace = APPS_NAMESPACE, "starting deployment apply");
 
-    match create_deployment(&client, &req.app_name, req.app_port, &image, APPS_NAMESPACE).await {
-        Ok(url) => {
-            info!(%url, "deployment applied successfully, transitioning to running");
-            store.insert(
-                job_name.clone(),
-                AppState {
-                    status: BuildStatus::Running { url },
-                },
-            );
-        }
-        Err(e) => {
-            error!(error = %e, "deployment failed, marking job as failed");
-            store.insert(
-                job_name.clone(),
-                AppState {
-                    status: BuildStatus::Failed {
-                        reason: e.to_string(),
+    let http_route_url =
+        match create_deployment(&client, &req.app_name, req.app_port, &image, APPS_NAMESPACE).await
+        {
+            Ok(_) => {
+                info!("deployment applied successfully, creating httproute");
+                match create_http_route(&client, &req.app_name, APPS_NAMESPACE).await {
+                    Ok(url) => url,
+                    Err(e) => {
+                        error!(error = %e, "httproute creation failed, marking job as failed");
+                        store.insert(
+                            job_name.clone(),
+                            AppState {
+                                status: BuildStatus::Failed {
+                                    reason: e.to_string(),
+                                },
+                            },
+                        );
+                        return;
+                    }
+                }
+            }
+            Err(e) => {
+                error!(error = %e, "deployment failed, marking job as failed");
+                store.insert(
+                    job_name.clone(),
+                    AppState {
+                        status: BuildStatus::Failed {
+                            reason: e.to_string(),
+                        },
                     },
-                },
-            );
-        }
-    }
+                );
+                return;
+            }
+        };
+
+    info!(%http_route_url, "httproute created successfully, transitioning to running");
+    store.insert(
+        job_name.clone(),
+        AppState {
+            status: BuildStatus::Running {
+                url: http_route_url,
+            },
+        },
+    );
 }
