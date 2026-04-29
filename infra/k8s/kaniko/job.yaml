@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # Must be generated later
+  name: kaniko
+  namespace: build-pipeline
+spec:
+  template:
+    spec:
+      containers:
+        - name: kaniko
+          # Community maintained version, see https://github.com/osscontainertools/kaniko
+          image: martizih/kaniko:latest
+          args:
+            # - "--dockerfile=/workspace/Dockerfile", no need for this for now as most people use Dockerfile. And we'd generate custom Dockerfile if needed too
+            # Must be supplied from user info (this whole job file can be inside code)
+            - "--context=git://github.com/kofta999/test-kaniko"
+            # Same here (at least image name)
+            - "--destination=zot.registry.svc.cluster.local:5000/kaniko"
+            # No need for TLS for now
+            - "--insecure"
+            - "--skip-tls-verify"
+            - "--insecure-pull"
+            # Might make `FROM nginx` pull from local reg directly
+            - "--registry-mirror=zot.registry.svc.cluster.local:5000"
+
+          # Will be replaced by a private registry
+          volumeMounts:
+            - name: kaniko-secret
+              mountPath: /kaniko/.docker
+            # - name: dockerfile-storage
+            #   mountPath: /workspace
+      restartPolicy: Never
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: registry-creds
+            items:
+              - key: config.json
+                path: config.json
+        # - name: dockerfile-storage
+        #   persistentVolumeClaim:
+        #     claimName: dockerfile-claim

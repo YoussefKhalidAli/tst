@@ -1,0 +1,25 @@
+kind: Gateway
+metadata:
+  name: apps-gateway
+  namespace: default
+spec:
+  gatewayClassName: nginx
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      hostname: "*.app.iti"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      port: 443
+      protocol: HTTPS
+      hostname: "*.app.iti"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: app-wildcard-tls
+      allowedRoutes:
+        namespaces:
+          from: All

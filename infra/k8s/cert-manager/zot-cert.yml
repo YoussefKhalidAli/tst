@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zot-tls
+  namespace: registry
+spec:
+  secretName: zot-tls-secret
+  issuerRef:
+    name: iti-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - zot.registry.svc.cluster.local
+    - zot.registry
