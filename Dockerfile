@@ -1,4 +1,9 @@
-# Use the official NGINX base image
-FROM nginx:latest
-# Expose port 80 to allow external access
-EXPOSE 80
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY app.py .
+
+EXPOSE 8000
+
+CMD ["python", "app.py"]
