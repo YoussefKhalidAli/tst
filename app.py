@@ -80,8 +80,8 @@ if __name__ == "__main__":
     # Start logger thread
     threading.Thread(target=log_message, daemon=True).start()
 
-    server = HTTPServer(("0.0.0.0", 7777), Handler)
+    server = HTTPServer(("0.0.0.0", 8000), Handler)
 
-    print("Server running on port 7777", flush=True)
+    print("Server running on port 8000", flush=True)
 
     server.serve_forever()
