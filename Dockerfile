@@ -1,9 +1,11 @@
 FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 COPY app.py .
 
-EXPOSE 8000
+EXPOSE 7777
 
-CMD ["python", "-u", "app.py"]
+CMD ["python", "app.py"]
