@@ -72,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def log_message():
     while True:
-        print("images ate zot.registry.svc.cluster.local", flush=True)
+        print("images at zot.registry.svc.cluster.local", flush=True)
         time.sleep(10)
 
 
