@@ -72,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def log_message():
     while True:
-        print("images are defo (fr*2) not in zot.registry.svc.cluster.local", flush=True)
+        print("images are defo (fr*3) not in zot.registry.svc.cluster.local", flush=True)
         time.sleep(10)
 
 
